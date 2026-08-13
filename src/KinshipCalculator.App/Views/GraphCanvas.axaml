@@ -1,0 +1,13 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="KinshipCalculator.App.Views.GraphCanvas">
+    <Border x:Name="Viewport"
+            ClipToBounds="True"
+            Background="Transparent"
+            PointerPressed="OnViewportPointerPressed"
+            PointerReleased="OnViewportPointerReleased"
+            PointerMoved="OnViewportPointerMoved"
+            PointerWheelChanged="OnViewportPointerWheel">
+        <Canvas x:Name="Surface" />
+    </Border>
+</UserControl>
