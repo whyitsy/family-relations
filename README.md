@@ -23,10 +23,12 @@ KinshipCalculator.slnx
 │   │   ├── ViewModels/                # MainViewModel
 │   │   └── Views/                     # MainWindow / MainView / GraphCanvas（自绘）
 │   ├── KinshipCalculator.Desktop/     # Windows 桌面头（WinExe，PublishAot）
+│   ├── KinshipCalculator.Transfer/    # 光学传输（喷泉码 + 协议 + QR，纯托管 AOT 安全）
 │   ├── KinshipCalculator.Android/     # Android 骨架（net10.0-android）
 │   └── KinshipCalculator.iOS/         # iOS 骨架（net10.0-ios）
 └── tests/
-    └── KinshipCalculator.Core.Tests/  # xUnit 单元测试（覆盖称谓规则/长幼/歧义/回退）
+    ├── KinshipCalculator.Core.Tests/    # xUnit：称谓规则/长幼/歧义/序列化
+    └── KinshipCalculator.Transfer.Tests/ # xUnit：喷泉码黄金向量/协议/QR/往返
 ```
 
 ---
@@ -37,6 +39,7 @@ KinshipCalculator.slnx
 
 ```powershell
 dotnet test tests\KinshipCalculator.Core.Tests
+dotnet test tests\KinshipCalculator.Transfer.Tests
 ```
 
 ### 2.2 桌面端调试运行
@@ -85,7 +88,27 @@ dotnet publish src\KinshipCalculator.Desktop -c Release -r win-x64
 
 ---
 
-## 4. 称谓规则与扩展
+## 4. 数据传递
+
+设备间无需网络/配对即可传递家谱数据：
+
+### 4.1 手动导入 / 导出（全平台）
+
+工具栏「数据传递」区提供：**导出 JSON 文件**、**复制 JSON**（到剪贴板）、**导入 JSON 文件**、**粘贴导入**（自动识别 JSON，可夹带说明文字）。导入会规范化：补齐/去重人员 Id、修正非法枚举、丢弃悬空/自环/重复关系、校验「我」。
+
+### 4.2 光学发送（屏幕 → 摄像头）
+
+点击「光学发送」打开窗口，屏幕持续播放**喷泉码二维码流**，另一台设备用摄像头扫描即可还原。核心 `KinshipCalculator.Transfer`：
+
+- 喷泉码：系统性-旋转木马 fountain code（周期 2k，前 k 帧原始块 + 后 k 帧 4–24 度修复帧），丢帧只耗时、不损正确性，收发帧率无需一致。
+- 协议：22 字节自描述帧头 + 文件容器（文件名/媒体类型/可选 gzip/SHA-256），与 [decimen-optical-transfer](https://github.com/bashalarmistalt/decimen-optical-transfer) **线上比特级兼容**（喷泉码流指纹经黄金向量验证）。
+- QR：ZXing.Net（ECC L、字节模式），纯托管，Native AOT 下可用（整体仅增约 0.3 MB）。
+
+> 接收端（摄像头）尚未接入：桌面端为避免捆绑 ~100MB 原生 OpenCV 改用手动导入替代；移动端摄像头接收需在可构建 Android/iOS 的环境完成（系统摄像头本身零额外占用）。
+
+---
+
+## 5. 称谓规则与扩展
 
 ### 4.1 算法流程
 
@@ -113,7 +136,7 @@ R("新称谓", new[] { F, B, S }, tg: Gender.Male, term: "某某"),
 
 ---
 
-## 5. AOT 兼容性要点
+## 6. AOT 兼容性要点
 
 - **序列化**：`System.Text.Json` 必须走源生成器上下文 `FamilyDataJsonContext`（禁止无上下文的 `JsonSerializer.Serialize(obj)`）。
 - **视图解析**：未使用反射式 `ViewLocator`，直接在 `App.axaml.cs` 构造视图与视图模型。
@@ -123,7 +146,7 @@ R("新称谓", new[] { F, B, S }, tg: Gender.Male, term: "某某"),
 
 ---
 
-## 6. 参考
+## 7. 参考
 
 - 需求参考文件：`参考1.txt`（技术栈/AOT）、`参考2.txt`（称谓算法）
 - [Avalonia 12 Breaking Changes](https://docs.avaloniaui.net/docs/avalonia12-breaking-changes)
