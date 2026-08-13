@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/KinshipCalculator.Android/KinshipCalculator.Android.csproj" />
+    <Project Path="src/KinshipCalculator.App/KinshipCalculator.App.csproj" />
+    <Project Path="src/KinshipCalculator.Core/KinshipCalculator.Core.csproj" />
+    <Project Path="src/KinshipCalculator.Desktop/KinshipCalculator.Desktop.csproj" />
+    <Project Path="src/KinshipCalculator.iOS/KinshipCalculator.iOS.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/KinshipCalculator.Core.Tests/KinshipCalculator.Core.Tests.csproj" />
+  </Folder>
+</Solution>
