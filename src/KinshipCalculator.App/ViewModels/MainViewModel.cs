@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using KinshipCalculator.App.Services;
 using KinshipCalculator.Core.Calculator;
 using KinshipCalculator.Core.Models;
+using KinshipCalculator.Core.Serialization;
 
 namespace KinshipCalculator.App.ViewModels;
 
@@ -39,6 +40,9 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private KinshipResultRow? _selectedResult;
+
+    [ObservableProperty]
+    private string _statusMessage = string.Empty;
 
     public MainViewModel(IStorageService storage)
     {
@@ -292,4 +296,39 @@ public partial class MainViewModel : ObservableObject
     }
 
     private void Save() => _storage.Save(_data);
+
+    // ── 数据导入 / 导出 ──
+
+    /// <summary>把当前家谱序列化为 JSON 文本（供文件导出或复制到剪贴板）。</summary>
+    public string SerializeCurrent() => FamilyDataSerializer.Serialize(_data);
+
+    /// <summary>从 JSON 文本导入家谱数据；成功后整体替换当前数据并持久化。</summary>
+    public bool TryImportJson(string? json, out string? error)
+    {
+        if (!FamilyDataSerializer.TryDeserialize(json, out var data, out error) || data is null)
+            return false;
+
+        ReplaceData(data);
+        return true;
+    }
+
+    private void ReplaceData(FamilyData data)
+    {
+        // 先清空选择，避免引用即将移除的旧对象。
+        SelectedResult = null;
+        SelectedPerson = null;
+
+        _data.People.Clear();
+        _data.People.AddRange(data.People);
+        _data.Relations.Clear();
+        _data.Relations.AddRange(data.Relations);
+        _data.SelfId = data.SelfId;
+
+        People = new ObservableCollection<Person>(_data.People);
+        SelfPerson = _data.People.FirstOrDefault(p => p.Id == _data.SelfId);
+        OnPropertyChanged(nameof(SelfLabel));
+
+        Recalculate();
+        StatusMessage = $"已导入 {data.People.Count} 位成员";
+    }
 }

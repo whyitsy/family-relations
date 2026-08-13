@@ -1,9 +1,9 @@
-using System.Text.Json;
 using KinshipCalculator.Core.Models;
+using KinshipCalculator.Core.Serialization;
 
 namespace KinshipCalculator.App.Services;
 
-/// <summary>基于 JSON 文件的家谱存储（AOT 安全：走源生成器上下文）。</summary>
+/// <summary>基于 JSON 文件的家谱存储（AOT 安全：走 Core 的源生成器序列化）。</summary>
 public sealed class JsonFileStorageService : IStorageService
 {
     private readonly string _path;
@@ -18,8 +18,7 @@ public sealed class JsonFileStorageService : IStorageService
                 return new FamilyData();
 
             var json = File.ReadAllText(_path);
-            return JsonSerializer.Deserialize(json, FamilyDataJsonContext.Default.FamilyData)
-                   ?? new FamilyData();
+            return FamilyDataSerializer.Deserialize(json) ?? new FamilyData();
         }
         catch
         {
@@ -32,8 +31,7 @@ public sealed class JsonFileStorageService : IStorageService
     {
         try
         {
-            var json = JsonSerializer.Serialize(data, FamilyDataJsonContext.Default.FamilyData);
-            File.WriteAllText(_path, json);
+            File.WriteAllText(_path, FamilyDataSerializer.Serialize(data));
         }
         catch
         {
