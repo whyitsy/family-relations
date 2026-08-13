@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\KinshipCalculator.Core\KinshipCalculator.Core.csproj" />
+    <ProjectReference Include="..\KinshipCalculator.Transfer\KinshipCalculator.Transfer.csproj" />
   </ItemGroup>
 
   <ItemGroup>
