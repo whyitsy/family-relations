@@ -1,0 +1,40 @@
+# Build results
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+
+# Publish output
+publish/
+artifacts/
+
+# Rider / VS
+.idea/
+.vs/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# NuGet
+*.nupkg
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+
+# Coverage
+*.coverage
+*.coveragexml
+coveragereport/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Misc
+*.log
+*.orig
+*.tmp
