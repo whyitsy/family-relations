@@ -5,6 +5,16 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.1.0] - 2026-08-14
+
+### Added
+
+- 数据传递 · 手动导入/导出：导出 JSON 文件、复制 JSON、导入 JSON 文件、粘贴导入识别（全平台，导入自动规范化）。
+- 数据传递 · 光学发送：新增 `KinshipCalculator.Transfer` 核心库（系统性-旋转木马喷泉码、22 字节自描述协议、文件容器 + SHA-256/gzip、ZXing.Net QR 编解码），与 decimen-optical-transfer 线上比特级兼容（喷泉码流指纹经黄金向量验证）。
+- 光学发送窗口：屏幕持续播放二维码流；接收端（摄像头）留待后续接入。
+- 序列化重构：`FamilyDataJsonContext` 与 `FamilyDataSerializer` 移入 Core，供存储/导入导出/光学传输共用。
+- 测试新增 60 个（序列化 6 + 传输 54），总计 80 个；Native AOT 发布仍约 37 MB。
+
 ## [1.0.0] - 2026-08-14
 
 ### Added
