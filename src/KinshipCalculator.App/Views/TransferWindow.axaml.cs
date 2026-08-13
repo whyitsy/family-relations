@@ -1,10 +1,6 @@
-using System.Runtime.InteropServices;
 using System.Text;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Media.Imaging;
-using Avalonia.Platform;
 using Avalonia.Threading;
 using KinshipCalculator.Core.Models;
 using KinshipCalculator.Core.Serialization;
@@ -18,11 +14,9 @@ namespace KinshipCalculator.App.Views;
 public partial class TransferWindow : Window
 {
     private const int BlockLength = 512;
-    private const int Scale = 5;
 
     private TransferSender? _sender;
     private DispatcherTimer? _timer;
-    private WriteableBitmap? _bitmap;
     private uint _seq;
     private bool _sending;
 
@@ -50,17 +44,6 @@ public partial class TransferWindow : Window
             ushort sessionId = (ushort)Random.Shared.Next(1, 65536);
             _sender = new TransferSender(container, BlockLength, sessionId);
 
-            var first = QrCodec.Encode(_sender.EncodeFrame(0));
-            if (first is null)
-            {
-                StatusText.Text = "编码失败：数据过大";
-                return;
-            }
-
-            int size = first.Size * Scale;
-            _bitmap = new WriteableBitmap(new PixelSize(size, size), new Vector(96, 96), PixelFormat.Rgba8888, AlphaFormat.Opaque);
-            QrImage.Source = _bitmap;
-
             _seq = 0;
             RenderFrame();
 
@@ -81,19 +64,17 @@ public partial class TransferWindow : Window
 
     private void RenderFrame()
     {
-        if (_sender is null || _bitmap is null)
+        if (_sender is null)
             return;
 
         var qr = QrCodec.Encode(_sender.EncodeFrame(_seq));
         if (qr is null)
-            return;
-
-        var (rgba, width, height) = QrRenderer.RenderRgba(qr, Scale);
-        using (var fb = _bitmap.Lock())
         {
-            Marshal.Copy(rgba, 0, fb.Address, Math.Min(rgba.Length, width * height * 4));
+            StatusText.Text = "编码失败：数据过大";
+            return;
         }
 
+        QrView.SetQr(qr);
         _seq++;
         StatusText.Text = $"帧 {_seq} · 共 {_sender.BlockCount} 块 · 循环播放中（另一台设备扫码接收）";
     }
