@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+
+    <!-- Native AOT 发布（轻量、快速启动） -->
+    <PublishAot>true</PublishAot>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>full</TrimMode>
+    <IlcTrimMetadata>true</IlcTrimMetadata>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <IsAotCompatible>true</IsAotCompatible>
+    <RootNamespace>KinshipCalculator.Desktop</RootNamespace>
+  </PropertyGroup>
+
+  <!-- 发布时不携带调试符号，减小体积 -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <AllowedReferenceRelatedFileExtensions></AllowedReferenceRelatedFileExtensions>
+    <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" Version="12.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\KinshipCalculator.App\KinshipCalculator.App.csproj" />
+  </ItemGroup>
+
+  <!-- 发布完成后删除 PDB 调试符号，保证产物精简 -->
+  <Target Name="StripPdbFromPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <_PublishPdbFiles Include="$(PublishDir)**\*.pdb" />
+    </ItemGroup>
+    <Delete Files="@(_PublishPdbFiles)" />
+    <Message Importance="high" Text="Stripped @(_PublishPdbFiles->Count()) pdb file(s) from publish output." />
+  </Target>
+
+</Project>
