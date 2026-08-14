@@ -18,6 +18,7 @@ namespace KinshipCalculator.Core.Serialization;
 [JsonSerializable(typeof(KinshipRuleSet))]
 [JsonSerializable(typeof(KinshipRule))]
 [JsonSerializable(typeof(List<KinshipRule>))]
+[JsonSerializable(typeof(List<KinshipRuleSet>))]
 [JsonSerializable(typeof(StepKind[]))]
 public partial class FamilyDataJsonContext : JsonSerializerContext
 {

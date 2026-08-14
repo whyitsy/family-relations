@@ -70,6 +70,17 @@ public partial class MainViewModel : ObservableObject
     /// <summary>当前图谱的家谱数据（供视图/图谱画布读取）。</summary>
     public FamilyData Data => CurrentGraph!.Data;
 
+    /// <summary>完整文档（供称谓规则窗口读取自定义规则集）。</summary>
+    public KinshipDocument Document => _document;
+
+    /// <summary>称谓规则被修改后，触发重算并保存。</summary>
+    public void ApplyRulesChanged()
+    {
+        Recalculate();
+        Save();
+        StatusMessage = "称谓规则已更新";
+    }
+
     public IReadOnlyList<KinshipResult> LastRawResults => _lastRawResults;
 
     public bool HasSelection => SelectedPerson is not null;
@@ -354,7 +365,7 @@ public partial class MainViewModel : ObservableObject
         if (CurrentGraph is null)
             return;
 
-        var rules = BuiltInRuleSets.RulesFor(CurrentGraph.RuleSetId);
+        var rules = BuiltInRuleSets.Resolve(CurrentGraph.RuleSetId, _document.RuleSets);
         _lastRawResults = new RelationshipCalculator().ComputeAll(Data, rules);
 
         var rows = new ObservableCollection<KinshipResultRow>();

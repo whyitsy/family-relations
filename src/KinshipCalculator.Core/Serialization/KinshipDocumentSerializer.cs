@@ -67,12 +67,34 @@ public static class KinshipDocumentSerializer
     }
 
     /// <summary>
-    /// 规范化文档：补齐/去重图谱 Id、规范化每个图谱的数据、校验规则集与当前图谱指针。
+    /// 规范化文档：补齐/去重图谱与规则集 Id、规范化每个图谱的数据、校验规则集与当前图谱指针。
     /// </summary>
     public static KinshipDocument Normalize(KinshipDocument doc)
     {
         var graphs = doc.Graphs ?? new List<FamilyGraph>();
 
+        // 1) 规范化自定义规则集：唯一且不与内置预设冲突的 Id。
+        var ruleSets = doc.RuleSets ?? new List<KinshipRuleSet>();
+        var builtInIds = new HashSet<string>(BuiltInRuleSets.All.Select(s => s.Id), StringComparer.Ordinal);
+        var ruleSetIds = new HashSet<string>(builtInIds, StringComparer.Ordinal);
+        var cleanedRuleSets = new List<KinshipRuleSet>();
+        foreach (var rs in ruleSets)
+        {
+            if (string.IsNullOrWhiteSpace(rs.Id) || builtInIds.Contains(rs.Id) || !ruleSetIds.Add(rs.Id))
+            {
+                string id;
+                do { id = Guid.NewGuid().ToString("N"); } while (!ruleSetIds.Add(id));
+                rs.Id = id;
+            }
+
+            if (string.IsNullOrWhiteSpace(rs.Name))
+                rs.Name = "自定义规则";
+
+            rs.Rules ??= new List<KinshipRule>();
+            cleanedRuleSets.Add(rs);
+        }
+
+        // 2) 规范化图谱。
         var ids = new HashSet<string>(StringComparer.Ordinal);
         foreach (var g in graphs)
         {
@@ -86,7 +108,7 @@ public static class KinshipDocumentSerializer
             if (string.IsNullOrWhiteSpace(g.Name))
                 g.Name = "未命名图谱";
 
-            if (!BuiltInRuleSets.All.Any(s => s.Id == g.RuleSetId))
+            if (BuiltInRuleSets.FindSet(g.RuleSetId, cleanedRuleSets) is null)
                 g.RuleSetId = BuiltInRuleSets.MandarinId;
 
             g.Data = FamilyDataSerializer.Normalize(g.Data ?? new FamilyData());
@@ -96,7 +118,7 @@ public static class KinshipDocumentSerializer
         if (current is null || !ids.Contains(current))
             current = graphs.Count > 0 ? graphs[0].Id : null;
 
-        return new KinshipDocument { Graphs = graphs, CurrentGraphId = current };
+        return new KinshipDocument { Graphs = graphs, RuleSets = cleanedRuleSets, CurrentGraphId = current };
     }
 
     private static KinshipDocument? TryDeserializeDocument(string text)

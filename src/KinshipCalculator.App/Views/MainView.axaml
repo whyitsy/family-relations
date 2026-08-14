@@ -31,6 +31,7 @@
             <TextBox Text="{Binding GraphName, Mode=TwoWay}" MinWidth="140" VerticalAlignment="Center" />
             <Button Content="新建图谱" Command="{Binding AddGraphCommand}" />
             <Button Content="删除图谱" Command="{Binding DeleteGraphCommand}" />
+            <Button Content="称谓规则" Click="OnOpenTerms" />
             <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" Opacity="0.8"
                        TextTrimming="CharacterEllipsis" MaxWidth="360" />
         </StackPanel>
