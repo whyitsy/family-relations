@@ -18,6 +18,8 @@ public partial class MainViewModel : ObservableObject
 
     private static readonly Gender[] GenderOrder = { Gender.Male, Gender.Female, Gender.Unknown };
 
+    private static readonly IComparer<Person> NameComparer = PinyinNameComparer.Instance;
+
     [ObservableProperty]
     private ObservableCollection<FamilyGraph> _graphs = new();
 
@@ -143,6 +145,7 @@ public partial class MainViewModel : ObservableObject
         var p = new Person { Name = "新成员", Gender = Gender.Unknown };
         Data.People.Add(p);
         People.Add(p);
+        SortPeople();
         SelectedPerson = p;
     }
 
@@ -201,6 +204,7 @@ public partial class MainViewModel : ObservableObject
                 p.Name = value ?? string.Empty;
                 OnPropertyChanged();
                 Recalculate();
+                SortPeople();
             }
         }
     }
@@ -327,10 +331,23 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(SelectedSpouse));
     }
 
+    private void SortPeople()
+    {
+        Data.People.Sort(NameComparer);
+        for (var i = 0; i < Data.People.Count; i++)
+        {
+            var item = Data.People[i];
+            var current = People.IndexOf(item);
+            if (current != i)
+                People.Move(current, i);
+        }
+    }
+
     private void RebuildFromCurrent()
     {
         var data = Data;
         People = new ObservableCollection<Person>(data.People);
+        SortPeople();
         SelfPerson = data.People.FirstOrDefault(p => p.Id == data.SelfId);
         SelectedPerson = null;
         OnPropertyChanged(nameof(SelfLabel));

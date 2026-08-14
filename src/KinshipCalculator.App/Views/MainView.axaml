@@ -54,21 +54,38 @@
             <TextBox Text="{Binding GraphName, Mode=TwoWay}" MinWidth="120" VerticalAlignment="Center" />
             <TextBlock Text="{Binding SelfLabel}" VerticalAlignment="Center" Margin="8,0,0,0" Opacity="0.8" />
             <Button Content="重置布局" Click="OnResetLayout" />
-            <Button x:Name="ToggleListButton" Content="隐藏成员列表" Click="OnToggleMemberList" />
             <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" Opacity="0.8"
                        TextTrimming="CharacterEllipsis" MaxWidth="300" />
         </StackPanel>
 
         <!-- 左：成员列表 -->
-        <ListBox x:Name="MemberList" Grid.Row="2" Grid.Column="0" Margin="12,0,4,12"
-                 ItemsSource="{Binding People}"
-                 SelectedItem="{Binding SelectedPerson, Mode=TwoWay}">
-            <ListBox.ItemTemplate>
-                <DataTemplate x:DataType="models:Person">
-                    <TextBlock Text="{Binding Name}" />
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
+        <DockPanel Grid.Row="2" Grid.Column="0" Margin="12,0,4,12">
+            <Border DockPanel.Dock="Top" Padding="2,0,2,6">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="成员列表" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <Button x:Name="ToggleListButton" Grid.Column="1" Content="隐藏" Click="OnToggleMemberList" />
+                </Grid>
+            </Border>
+            <Border x:Name="MemberListContainer" BorderBrush="#22000000" BorderThickness="1" CornerRadius="4" Padding="2">
+                <ListBox x:Name="MemberList"
+                         ItemsSource="{Binding People}"
+                         SelectedItem="{Binding SelectedPerson, Mode=TwoWay}">
+                    <ListBox.Styles>
+                        <Style Selector="ListBoxItem">
+                            <Setter Property="Padding" Value="8,6" />
+                        </Style>
+                        <Style Selector="ListBoxItem:nth-child(2n)">
+                            <Setter Property="Background" Value="#14000000" />
+                        </Style>
+                    </ListBox.Styles>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:Person">
+                            <TextBlock Text="{Binding Name}" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Border>
+        </DockPanel>
 
         <!-- 分隔条 1 -->
         <GridSplitter x:Name="LeftSplitter" Grid.Row="2" Grid.Column="1" Width="6"
