@@ -20,6 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AvaloniaResource Include="Assets\app-icon.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <TrimmerRootAssembly Include="CommunityToolkit.Mvvm" />
     <TrimmerRootAssembly Include="System.Text.Encoding.CodePages" />
   </ItemGroup>

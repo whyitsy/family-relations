@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>app-icon.ico</ApplicationIcon>
 
     <!-- Native AOT 发布（轻量、快速启动） -->
     <PublishAot>true</PublishAot>
