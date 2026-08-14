@@ -90,4 +90,64 @@ public class KinshipDocumentTests
         Assert.Equal(set.Rules.Count, restored.Rules.Count);
         Assert.Equal(set.Rules[0].Term, restored.Rules[0].Term);
     }
+
+    [Fact]
+    public void Cantonese_ChangesFatherTerm()
+    {
+        var b = new FamilyBuilder { SelfId = "me" };
+        b.Add("me", Gender.Male, new DateTime(1990, 1, 1));
+        b.Add("dad", Gender.Male, new DateTime(1960, 1, 1));
+        b.Father("me", "dad");
+
+        var results = new RelationshipCalculator().ComputeAll(b.Build(), BuiltInRuleSets.Cantonese.Rules);
+
+        Assert.Equal("老豆", results.Single(r => r.PersonId == "dad").Term);
+    }
+
+    [Fact]
+    public void Resolve_CustomSet_TakesPrecedence()
+    {
+        var custom = new KinshipRuleSet
+        {
+            Id = "mycustom",
+            Name = "自定义",
+            Rules = new List<KinshipRule>
+            {
+                new("爸爸", new[] { StepKind.Father }, null, null, AgeRule.None, 0, null, null, "老豆"),
+            },
+        };
+
+        var rules = BuiltInRuleSets.Resolve("mycustom", new[] { custom });
+
+        Assert.Equal("老豆", rules.Single(r => r.Id == "爸爸").Term);
+    }
+
+    [Fact]
+    public void Resolve_UnknownId_FallsBackToMandarin()
+    {
+        var rules = BuiltInRuleSets.Resolve("does-not-exist", null);
+
+        Assert.Equal("爸爸", rules.Single(r => r.Id == "爸爸").Term);
+    }
+
+    [Fact]
+    public void Normalize_KeepsCustomRuleSets_AndRenamesBuiltInCollision()
+    {
+        var doc = new KinshipDocument
+        {
+            Graphs = new List<FamilyGraph> { new FamilyGraph { RuleSetId = "mycustom" } },
+            RuleSets = new List<KinshipRuleSet>
+            {
+                new KinshipRuleSet { Id = "mandarin", Name = "冲突", Rules = new List<KinshipRule>() },
+                new KinshipRuleSet { Id = "mycustom", Name = "我的", Rules = new List<KinshipRule>() },
+            },
+        };
+
+        var n = KinshipDocumentSerializer.Normalize(doc);
+
+        Assert.Equal(2, n.RuleSets.Count);
+        Assert.DoesNotContain(n.RuleSets, s => s.Id == "mandarin");
+        Assert.Contains(n.RuleSets, s => s.Id == "mycustom");
+        Assert.Equal("mycustom", n.Graphs[0].RuleSetId); // 指向自定义集，未被回落
+    }
 }

@@ -1,0 +1,130 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:KinshipCalculator.App.ViewModels"
+        x:Class="KinshipCalculator.App.Views.TermsWindow"
+        x:DataType="vm:TermsViewModel"
+        Width="920"
+        Height="660"
+        MinWidth="760"
+        MinHeight="540"
+        Title="称谓规则">
+    <Grid RowDefinitions="Auto,*,Auto" Margin="12">
+
+        <!-- 规则集选择 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+            <TextBlock Text="规则集：" VerticalAlignment="Center" Opacity="0.8" />
+            <ComboBox ItemsSource="{Binding RuleSetOptions}"
+                      SelectedItem="{Binding SelectedRuleSetOption, Mode=TwoWay}"
+                      MinWidth="200" VerticalAlignment="Center">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:RuleSetOption">
+                        <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button Content="复制为自定义" Command="{Binding NewCustomRuleSetCommand}" />
+            <Button Content="删除此规则集" Command="{Binding DeleteCustomRuleSetCommand}"
+                    IsEnabled="{Binding IsCustomSelected}" />
+            <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" Opacity="0.8"
+                       TextTrimming="CharacterEllipsis" MaxWidth="280" />
+        </StackPanel>
+
+        <!-- 规则列表 + 详情 -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,380">
+
+            <ListBox Grid.Column="0"
+                     ItemsSource="{Binding RuleRows}"
+                     SelectedItem="{Binding SelectedRuleRow, Mode=TwoWay}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:RuleRow">
+                        <StackPanel Margin="0,4">
+                            <TextBlock Text="{Binding PathText}" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding Rule.Term}" Opacity="0.9" />
+                            <TextBlock Text="{Binding ConditionText}" FontSize="11" Opacity="0.6" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <!-- 详情编辑 -->
+            <StackPanel Grid.Column="1" Margin="12,0,0,0" Spacing="6">
+                <TextBlock Text="编辑规则" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding SelectedRuleRow.PathText}" TextWrapping="Wrap" Opacity="0.8" />
+
+                <TextBlock Text="称谓" />
+                <TextBox Text="{Binding SelectedTerm, Mode=TwoWay}" IsEnabled="{Binding CanEditSelected}" />
+
+                <TextBlock Text="年长称谓（可选，用于伯/叔、兄/弟等长幼区分）" FontSize="11" Opacity="0.7" />
+                <TextBox Text="{Binding SelectedOlder, Mode=TwoWay}" IsEnabled="{Binding CanEditSelected}" />
+
+                <TextBlock Text="年幼称谓（可选）" FontSize="11" Opacity="0.7" />
+                <TextBox Text="{Binding SelectedYounger, Mode=TwoWay}" IsEnabled="{Binding CanEditSelected}" />
+
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                    <Button Content="添加规则" Command="{Binding BeginAddRuleCommand}" IsEnabled="{Binding IsCustomSelected}" />
+                    <Button Content="删除此规则" Command="{Binding DeleteRuleCommand}" IsEnabled="{Binding CanEditSelected}" />
+                </StackPanel>
+
+                <TextBlock Text="提示：内置预设为只读，请先「复制为自定义」再编辑；修改会立即应用到当前图谱。"
+                           FontSize="11" Opacity="0.7" TextWrapping="Wrap" />
+            </StackPanel>
+        </Grid>
+
+        <!-- 添加规则组合器 -->
+        <Border Grid.Row="2" IsVisible="{Binding IsComposing}"
+                BorderBrush="#88888888"
+                BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,8,0,0">
+            <StackPanel Spacing="6">
+                <TextBlock Text="添加规则" FontWeight="SemiBold" />
+
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="关系步：" VerticalAlignment="Center" />
+                    <ComboBox ItemsSource="{Binding AvailableSteps}"
+                              SelectedIndex="{Binding SelectedStepIndex, Mode=TwoWay}"
+                              MinWidth="150" />
+                    <Button Content="＋ 添加此步" Command="{Binding AddStepCommand}" />
+                    <Button Content="移除最后一步" Command="{Binding RemoveLastStepCommand}" />
+                </StackPanel>
+
+                <TextBlock Text="{Binding NewPatternText}" Opacity="0.85" TextWrapping="Wrap" />
+
+                <Grid ColumnDefinitions="Auto,160,Auto,160" RowDefinitions="Auto,Auto,Auto" Margin="0,4,0,0">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="目标性别" VerticalAlignment="Center" />
+                    <ComboBox Grid.Row="0" Grid.Column="1" SelectedIndex="{Binding NewTargetGenderIndex, Mode=TwoWay}">
+                        <ComboBoxItem Content="不限" />
+                        <ComboBoxItem Content="男" />
+                        <ComboBoxItem Content="女" />
+                    </ComboBox>
+                    <TextBlock Grid.Row="0" Grid.Column="2" Text="本人性别" VerticalAlignment="Center" />
+                    <ComboBox Grid.Row="0" Grid.Column="3" SelectedIndex="{Binding NewSelfGenderIndex, Mode=TwoWay}">
+                        <ComboBoxItem Content="不限" />
+                        <ComboBoxItem Content="男" />
+                        <ComboBoxItem Content="女" />
+                    </ComboBox>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="长幼" VerticalAlignment="Center" />
+                    <ComboBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3"
+                              SelectedIndex="{Binding NewAgeRuleIndex, Mode=TwoWay}">
+                        <ComboBoxItem Content="不比较" />
+                        <ComboBoxItem Content="与我比（兄/弟、堂/表）" />
+                        <ComboBoxItem Content="与上一步比（伯/叔）" />
+                    </ComboBox>
+                </Grid>
+
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="称谓" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding NewTerm, Mode=TwoWay}" />
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="年长称谓" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding NewOlder, Mode=TwoWay}" />
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="年幼称谓" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding NewYounger, Mode=TwoWay}" />
+                </Grid>
+
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="确定添加" Command="{Binding ConfirmAddRuleCommand}" />
+                    <Button Content="取消" Command="{Binding CancelAddRuleCommand}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
