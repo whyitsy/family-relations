@@ -4,14 +4,26 @@ using KinshipCalculator.Core.Models;
 namespace KinshipCalculator.Core.Rules;
 
 /// <summary>
-/// 称谓规则库（按普通话常见称谓）。新增称谓只需在此追加一条规则，无需改动匹配代码。
+/// 内置称谓规则集（按地区/方言划分）。当前先提供「普通话」一套；
+/// 后续可追加粤语、吴语、四川话等预设。用户自定义规则集以同样结构持久化。
 /// 符号：F 父亲 / M 母亲 / N 儿子 / D 女儿 / S 配偶 / B 兄弟 / Z 姐妹 / C 孩子(未知) / Sib 兄弟姐妹(未知)。
 /// </summary>
-public static class KinshipRuleBook
+public static class BuiltInRuleSets
 {
-    public static readonly KinshipRule[] Rules = Build();
+    public const string MandarinId = "mandarin";
 
-    private static KinshipRule[] Build()
+    public static KinshipRuleSet Mandarin { get; } = CreateMandarin();
+
+    public static IReadOnlyList<KinshipRuleSet> All { get; } = new[] { Mandarin };
+
+    /// <summary>按 Id 取规则集；未知 Id 回落为普通话。</summary>
+    public static IReadOnlyList<KinshipRule> RulesFor(string? id)
+    {
+        var set = All.FirstOrDefault(s => s.Id == id) ?? Mandarin;
+        return set.Rules;
+    }
+
+    private static KinshipRuleSet CreateMandarin()
     {
         var F = StepKind.Father;
         var M = StepKind.Mother;
@@ -35,7 +47,7 @@ public static class KinshipRuleBook
             string term = "")
             => new(id, p, sg, tg, ar, idx, older, younger, term);
 
-        return new[]
+        var rules = new[]
         {
             // ── 配偶 ──
             R("丈夫", new[] { S }, tg: Gender.Male, term: "丈夫"),
@@ -132,5 +144,7 @@ public static class KinshipRuleBook
             R("大姑子/小姑子", new[] { S, Z }, sg: Gender.Female, tg: Gender.Female, ar: AgeRule.StepVsPrevious, idx: 1, older: "大姑子", younger: "小姑子", term: "大姑子/小姑子"),
             R("配偶的姐妹", new[] { S, Z }, sg: Gender.Unknown, tg: Gender.Female, term: "配偶的姐妹"),
         };
+
+        return new KinshipRuleSet { Id = MandarinId, Name = "普通话", Rules = rules.ToList() };
     }
 }

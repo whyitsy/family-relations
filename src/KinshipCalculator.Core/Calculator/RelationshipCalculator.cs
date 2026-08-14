@@ -7,9 +7,14 @@ namespace KinshipCalculator.Core.Calculator;
 /// <summary>为图中除「我」外的每个人计算中文亲属称谓。</summary>
 public sealed class RelationshipCalculator
 {
-    /// <summary>计算全图称谓（按距离、姓名排序）。</summary>
-    public IReadOnlyList<KinshipResult> ComputeAll(FamilyData data)
+    /// <summary>
+    /// 计算全图称谓（按距离、姓名排序）。
+    /// <paramref name="rules"/> 为空时使用内置普通话规则集。
+    /// </summary>
+    public IReadOnlyList<KinshipResult> ComputeAll(FamilyData data, IReadOnlyList<KinshipRule>? rules = null)
     {
+        rules ??= BuiltInRuleSets.Mandarin.Rules;
+
         if (string.IsNullOrEmpty(data.SelfId))
             return Array.Empty<KinshipResult>();
 
@@ -26,7 +31,7 @@ public sealed class RelationshipCalculator
         {
             if (node.Person.Id == self.Id)
                 continue;
-            results.Add(Compute(self, node.Person, graph, finder));
+            results.Add(Compute(self, node.Person, graph, finder, rules));
         }
 
         return results
@@ -35,7 +40,7 @@ public sealed class RelationshipCalculator
             .ToList();
     }
 
-    private static KinshipResult Compute(Person self, Person target, RelationshipGraph graph, PathFinder finder)
+    private static KinshipResult Compute(Person self, Person target, RelationshipGraph graph, PathFinder finder, IReadOnlyList<KinshipRule> rules)
     {
         var paths = finder.FindShortestPaths(self, target);
         if (paths.Count == 0)
@@ -59,7 +64,7 @@ public sealed class RelationshipCalculator
             if (firstPath.Length == 0)
                 firstPath = arr;
 
-            if (TryMatch(self, target, arr, out var term, out var needsBirthDate))
+            if (TryMatch(self, target, arr, rules, out var term, out var needsBirthDate))
                 matches.Add((term, needsBirthDate));
         }
 
@@ -95,10 +100,11 @@ public sealed class RelationshipCalculator
         Person self,
         Person target,
         PathStep[] path,
+        IReadOnlyList<KinshipRule> rules,
         out string term,
         out bool needsBirthDate)
     {
-        foreach (var rule in KinshipRuleBook.Rules)
+        foreach (var rule in rules)
         {
             var match = KinshipEngine.Match(rule, self, target, path);
             if (match is not null)
