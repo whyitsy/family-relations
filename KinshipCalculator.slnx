@@ -5,10 +5,8 @@
     <Project Path="src/KinshipCalculator.Core/KinshipCalculator.Core.csproj" />
     <Project Path="src/KinshipCalculator.Desktop/KinshipCalculator.Desktop.csproj" />
     <Project Path="src/KinshipCalculator.iOS/KinshipCalculator.iOS.csproj" />
-    <Project Path="src/KinshipCalculator.Transfer/KinshipCalculator.Transfer.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/KinshipCalculator.Core.Tests/KinshipCalculator.Core.Tests.csproj" />
-    <Project Path="tests/KinshipCalculator.Transfer.Tests/KinshipCalculator.Transfer.Tests.csproj" />
   </Folder>
 </Solution>

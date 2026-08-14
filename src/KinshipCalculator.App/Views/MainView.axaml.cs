@@ -179,15 +179,4 @@ public partial class MainView : UserControl
         }
     }
 
-    private async void OnOpenTransfer(object? sender, RoutedEventArgs e)
-    {
-        if (_vm is null)
-            return;
-
-        var window = new TransferWindow { Data = _vm.Data };
-        if (TopLevel.GetTopLevel(this) is Window owner)
-            await window.ShowDialog(owner);
-        else
-            window.Show();
-    }
 }

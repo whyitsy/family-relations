@@ -5,6 +5,12 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.2.0] - 2026-08-14
+
+### Removed
+
+- 移除「光学发送」功能及 `KinshipCalculator.Transfer` 核心库（喷泉码/协议/QR）与其测试工程：二维码在部分环境无法稳定渲染，且接收端（摄像头）需在可构建 Android/iOS 的环境才能接入。桌面端保留 **JSON 文件导入/导出 + 复制/粘贴** 两种精简数据传递方式。
+
 ## [1.1.2] - 2026-08-14
 
 ### Fixed
