@@ -9,7 +9,13 @@ namespace KinshipCalculator.App.Views;
 
 public partial class MainView : UserControl
 {
+    private const double LeftColumnWidth = 260;
+    private const double LeftColumnMinWidth = 170;
+    private const double RightColumnWidth = 340;
+    private const double RightColumnMinWidth = 230;
+
     private MainViewModel? _vm;
+    private bool _memberListVisible = true;
 
     public MainView()
     {
@@ -28,13 +34,18 @@ public partial class MainView : UserControl
         {
             _vm.PropertyChanged += OnVmPropertyChanged;
             RefreshGraph();
+            ApplyMemberListVisibility();
+            ApplyRightPanelVisibility();
         }
     }
 
     private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(MainViewModel.KinshipResults) or nameof(MainViewModel.SelfPerson))
+        if (e.PropertyName is nameof(MainViewModel.LastRawResults) or nameof(MainViewModel.SelfPerson))
             RefreshGraph();
+
+        if (e.PropertyName is nameof(MainViewModel.HasSelection))
+            ApplyRightPanelVisibility();
     }
 
     private void RefreshGraph()
@@ -47,7 +58,60 @@ public partial class MainView : UserControl
             _vm.SelfPerson?.Id,
             _vm.SelectedPerson?.Id,
             _vm.LastRawResults,
-            p => _vm.SelectedPerson = p);
+            p => _vm.SelectedPerson = p,
+            () => _vm.SelectedPerson = null);
+    }
+
+    // ── 左右面板折叠 ──
+
+    private void OnResetLayout(object? sender, RoutedEventArgs e)
+    {
+        Graph.ResetLayout();
+    }
+
+    private void OnToggleMemberList(object? sender, RoutedEventArgs e)
+    {
+        _memberListVisible = !_memberListVisible;
+        ApplyMemberListVisibility();
+    }
+
+    private void ApplyMemberListVisibility()
+    {
+        if (_memberListVisible)
+        {
+            Root.ColumnDefinitions[0].Width = new GridLength(LeftColumnWidth);
+            Root.ColumnDefinitions[0].MinWidth = LeftColumnMinWidth;
+            LeftSplitter.IsVisible = true;
+            MemberList.IsVisible = true;
+            ToggleListButton.Content = "隐藏成员列表";
+        }
+        else
+        {
+            Root.ColumnDefinitions[0].Width = new GridLength(0);
+            Root.ColumnDefinitions[0].MinWidth = 0;
+            LeftSplitter.IsVisible = false;
+            MemberList.IsVisible = false;
+            ToggleListButton.Content = "显示成员列表";
+        }
+    }
+
+    private void ApplyRightPanelVisibility()
+    {
+        var hasSelection = _vm?.HasSelection ?? false;
+        if (hasSelection)
+        {
+            Root.ColumnDefinitions[4].Width = new GridLength(RightColumnWidth);
+            Root.ColumnDefinitions[4].MinWidth = RightColumnMinWidth;
+            RightSplitter.IsVisible = true;
+            DetailPanel.IsVisible = true;
+        }
+        else
+        {
+            Root.ColumnDefinitions[4].Width = new GridLength(0);
+            Root.ColumnDefinitions[4].MinWidth = 0;
+            RightSplitter.IsVisible = false;
+            DetailPanel.IsVisible = false;
+        }
     }
 
     // ── 数据传递 ──
