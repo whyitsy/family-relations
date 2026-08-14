@@ -6,7 +6,7 @@
              x:Class="KinshipCalculator.App.Views.MainView"
              x:DataType="vm:MainViewModel">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*">
+    <Grid x:Name="Root" RowDefinitions="Auto,Auto,*">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="260" MinWidth="170" MaxWidth="520" />
             <ColumnDefinition Width="6" />
@@ -15,12 +15,35 @@
             <ColumnDefinition Width="340" MinWidth="230" MaxWidth="640" />
         </Grid.ColumnDefinitions>
 
-        <!-- 图谱管理 -->
-        <StackPanel Grid.Row="0" Grid.ColumnSpan="5" Orientation="Horizontal" Spacing="8" Margin="12,10,12,0">
+        <!-- 菜单栏：把三行按钮收敛为「文件 / 图谱 / 成员」下拉菜单 -->
+        <Menu Grid.Row="0" Grid.ColumnSpan="5">
+            <MenuItem Header="文件">
+                <MenuItem Header="导出 JSON 文件" Click="OnExportFile" />
+                <MenuItem Header="复制 JSON" Click="OnCopyText" />
+                <Separator />
+                <MenuItem Header="导入 JSON 文件" Click="OnImportFile" />
+                <MenuItem Header="粘贴导入" Click="OnPasteImport" />
+            </MenuItem>
+            <MenuItem Header="图谱">
+                <MenuItem Header="新建图谱" Command="{Binding AddGraphCommand}" />
+                <MenuItem Header="删除图谱" Command="{Binding DeleteGraphCommand}" />
+                <Separator />
+                <MenuItem Header="称谓规则" Click="OnOpenTerms" />
+            </MenuItem>
+            <MenuItem Header="成员">
+                <MenuItem Header="新增成员" Command="{Binding AddPersonCommand}" />
+                <MenuItem Header="删除成员" Command="{Binding DeletePersonCommand}" />
+                <MenuItem Header="设为『我』" Command="{Binding SetSelfCommand}" />
+            </MenuItem>
+        </Menu>
+
+        <!-- 信息栏：保留当前状态（图谱 / 名称 / 『我』 / 状态），并放置成员列表折叠开关 -->
+        <StackPanel Grid.Row="1" Grid.ColumnSpan="5" Orientation="Horizontal" Spacing="8" Margin="12,6,12,8">
+            <TextBlock Text="亲戚关系计算器" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
             <TextBlock Text="图谱：" VerticalAlignment="Center" Opacity="0.8" />
             <ComboBox ItemsSource="{Binding Graphs}"
                       SelectedItem="{Binding CurrentGraph, Mode=TwoWay}"
-                      MinWidth="160" VerticalAlignment="Center">
+                      MinWidth="150" VerticalAlignment="Center">
                 <ComboBox.ItemTemplate>
                     <DataTemplate x:DataType="models:FamilyGraph">
                         <TextBlock Text="{Binding Name}" />
@@ -28,34 +51,16 @@
                 </ComboBox.ItemTemplate>
             </ComboBox>
             <TextBlock Text="名称" VerticalAlignment="Center" Opacity="0.8" />
-            <TextBox Text="{Binding GraphName, Mode=TwoWay}" MinWidth="140" VerticalAlignment="Center" />
-            <Button Content="新建图谱" Command="{Binding AddGraphCommand}" />
-            <Button Content="删除图谱" Command="{Binding DeleteGraphCommand}" />
-            <Button Content="称谓规则" Click="OnOpenTerms" />
+            <TextBox Text="{Binding GraphName, Mode=TwoWay}" MinWidth="120" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding SelfLabel}" VerticalAlignment="Center" Margin="8,0,0,0" Opacity="0.8" />
+            <Button Content="重置布局" Click="OnResetLayout" />
+            <Button x:Name="ToggleListButton" Content="隐藏成员列表" Click="OnToggleMemberList" />
             <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" Opacity="0.8"
-                       TextTrimming="CharacterEllipsis" MaxWidth="360" />
-        </StackPanel>
-
-        <!-- 成员工具栏 -->
-        <StackPanel Grid.Row="1" Grid.ColumnSpan="5" Orientation="Horizontal" Spacing="8" Margin="12,8">
-            <TextBlock Text="亲戚关系计算器" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
-            <Button Content="新增成员" Command="{Binding AddPersonCommand}" />
-            <Button Content="删除成员" Command="{Binding DeletePersonCommand}" />
-            <Button Content="设为『我』" Command="{Binding SetSelfCommand}" />
-            <TextBlock Text="{Binding SelfLabel}" VerticalAlignment="Center" Margin="16,0,0,0" Opacity="0.8" />
-        </StackPanel>
-
-        <!-- 数据传递工具栏 -->
-        <StackPanel Grid.Row="2" Grid.ColumnSpan="5" Orientation="Horizontal" Spacing="8" Margin="12,0,12,8">
-            <TextBlock Text="数据传递：" VerticalAlignment="Center" Opacity="0.7" />
-            <Button Content="导出 JSON 文件" Click="OnExportFile" />
-            <Button Content="复制 JSON" Click="OnCopyText" />
-            <Button Content="导入 JSON 文件" Click="OnImportFile" />
-            <Button Content="粘贴导入" Click="OnPasteImport" />
+                       TextTrimming="CharacterEllipsis" MaxWidth="300" />
         </StackPanel>
 
         <!-- 左：成员列表 -->
-        <ListBox Grid.Row="3" Grid.Column="0" Margin="12,0,4,12"
+        <ListBox x:Name="MemberList" Grid.Row="2" Grid.Column="0" Margin="12,0,4,12"
                  ItemsSource="{Binding People}"
                  SelectedItem="{Binding SelectedPerson, Mode=TwoWay}">
             <ListBox.ItemTemplate>
@@ -66,7 +71,7 @@
         </ListBox>
 
         <!-- 分隔条 1 -->
-        <GridSplitter Grid.Row="3" Grid.Column="1" Width="6"
+        <GridSplitter x:Name="LeftSplitter" Grid.Row="2" Grid.Column="1" Width="6"
                       Background="#55333333"
                       ResizeDirection="Columns"
                       ResizeBehavior="PreviousAndNext"
@@ -74,102 +79,85 @@
                       VerticalAlignment="Stretch" />
 
         <!-- 中：关系图谱 -->
-        <views:GraphCanvas Grid.Row="3" Grid.Column="2" x:Name="Graph" Margin="0,0,4,12" />
+        <views:GraphCanvas Grid.Row="2" Grid.Column="2" x:Name="Graph" Margin="0,0,4,12" />
 
         <!-- 分隔条 2 -->
-        <GridSplitter Grid.Row="3" Grid.Column="3" Width="6"
+        <GridSplitter x:Name="RightSplitter" Grid.Row="2" Grid.Column="3" Width="6"
                       Background="#55333333"
                       ResizeDirection="Columns"
                       ResizeBehavior="PreviousAndNext"
                       HorizontalAlignment="Stretch"
                       VerticalAlignment="Stretch" />
 
-        <!-- 右：详情编辑 + 称谓结果 -->
-        <Grid Grid.Row="3" Grid.Column="4" RowDefinitions="Auto,*" Margin="0,0,12,12">
+        <!-- 右：成员详情（无选中时整列收起，不再显示称谓结果列表） -->
+        <StackPanel x:Name="DetailPanel" Grid.Row="2" Grid.Column="4" Spacing="6" Margin="0,0,12,12"
+                    IsEnabled="{Binding HasSelection}">
+            <TextBlock Text="成员详情" FontWeight="SemiBold" />
 
-            <!-- 成员详情 -->
-            <StackPanel Grid.Row="0" Spacing="6" IsEnabled="{Binding HasSelection}">
-                <TextBlock Text="成员详情" FontWeight="SemiBold" />
+            <Grid ColumnDefinitions="56,*">
+                <TextBlock Text="姓名" VerticalAlignment="Center" />
+                <TextBox Grid.Column="1" Text="{Binding SelectedName, Mode=TwoWay}" />
+            </Grid>
 
-                <Grid ColumnDefinitions="56,*">
-                    <TextBlock Text="姓名" VerticalAlignment="Center" />
-                    <TextBox Grid.Column="1" Text="{Binding SelectedName, Mode=TwoWay}" />
-                </Grid>
+            <Grid ColumnDefinitions="56,*">
+                <TextBlock Text="性别" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1" SelectedIndex="{Binding SelectedGenderIndex, Mode=TwoWay}">
+                    <ComboBoxItem Content="男" />
+                    <ComboBoxItem Content="女" />
+                    <ComboBoxItem Content="未知" />
+                </ComboBox>
+            </Grid>
 
-                <Grid ColumnDefinitions="56,*">
-                    <TextBlock Text="性别" VerticalAlignment="Center" />
-                    <ComboBox Grid.Column="1" SelectedIndex="{Binding SelectedGenderIndex, Mode=TwoWay}">
-                        <ComboBoxItem Content="男" />
-                        <ComboBoxItem Content="女" />
-                        <ComboBoxItem Content="未知" />
-                    </ComboBox>
-                </Grid>
+            <Grid ColumnDefinitions="56,*">
+                <TextBlock Text="生日" VerticalAlignment="Center" />
+                <DatePicker Grid.Column="1" SelectedDate="{Binding SelectedBirthDate, Mode=TwoWay}" />
+            </Grid>
 
-                <Grid ColumnDefinitions="56,*">
-                    <TextBlock Text="生日" VerticalAlignment="Center" />
-                    <DatePicker Grid.Column="1" SelectedDate="{Binding SelectedBirthDate, Mode=TwoWay}" />
-                </Grid>
+            <Grid ColumnDefinitions="56,*">
+                <TextBlock Text="备注" VerticalAlignment="Center" />
+                <TextBox Grid.Column="1" Text="{Binding SelectedNotes, Mode=TwoWay}" />
+            </Grid>
 
-                <Grid ColumnDefinitions="56,*">
-                    <TextBlock Text="备注" VerticalAlignment="Center" />
-                    <TextBox Grid.Column="1" Text="{Binding SelectedNotes, Mode=TwoWay}" />
-                </Grid>
+            <Grid ColumnDefinitions="56,*,Auto">
+                <TextBlock Text="父亲" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding People}"
+                          SelectedItem="{Binding SelectedFather, Mode=TwoWay}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:Person">
+                            <TextBlock Text="{Binding Name}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Grid.Column="2" Content="清除" Command="{Binding ClearFatherCommand}" />
+            </Grid>
 
-                <Grid ColumnDefinitions="56,*,Auto">
-                    <TextBlock Text="父亲" VerticalAlignment="Center" />
-                    <ComboBox Grid.Column="1" ItemsSource="{Binding People}"
-                              SelectedItem="{Binding SelectedFather, Mode=TwoWay}">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate x:DataType="models:Person">
-                                <TextBlock Text="{Binding Name}" />
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                    <Button Grid.Column="2" Content="清除" Command="{Binding ClearFatherCommand}" />
-                </Grid>
+            <Grid ColumnDefinitions="56,*,Auto">
+                <TextBlock Text="母亲" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding People}"
+                          SelectedItem="{Binding SelectedMother, Mode=TwoWay}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:Person">
+                            <TextBlock Text="{Binding Name}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Grid.Column="2" Content="清除" Command="{Binding ClearMotherCommand}" />
+            </Grid>
 
-                <Grid ColumnDefinitions="56,*,Auto">
-                    <TextBlock Text="母亲" VerticalAlignment="Center" />
-                    <ComboBox Grid.Column="1" ItemsSource="{Binding People}"
-                              SelectedItem="{Binding SelectedMother, Mode=TwoWay}">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate x:DataType="models:Person">
-                                <TextBlock Text="{Binding Name}" />
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                    <Button Grid.Column="2" Content="清除" Command="{Binding ClearMotherCommand}" />
-                </Grid>
+            <Grid ColumnDefinitions="56,*,Auto">
+                <TextBlock Text="配偶" VerticalAlignment="Center" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding People}"
+                          SelectedItem="{Binding SelectedSpouse, Mode=TwoWay}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:Person">
+                            <TextBlock Text="{Binding Name}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Grid.Column="2" Content="清除" Command="{Binding ClearSpouseCommand}" />
+            </Grid>
 
-                <Grid ColumnDefinitions="56,*,Auto">
-                    <TextBlock Text="配偶" VerticalAlignment="Center" />
-                    <ComboBox Grid.Column="1" ItemsSource="{Binding People}"
-                              SelectedItem="{Binding SelectedSpouse, Mode=TwoWay}">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate x:DataType="models:Person">
-                                <TextBlock Text="{Binding Name}" />
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                    <Button Grid.Column="2" Content="清除" Command="{Binding ClearSpouseCommand}" />
-                </Grid>
-
-                <TextBlock Text="提示：兄弟姐妹与子女会按父/母自动推导。" FontSize="11" Opacity="0.7" TextWrapping="Wrap" />
-            </StackPanel>
-
-            <!-- 称谓结果 -->
-            <ListBox Grid.Row="1" Margin="0,10,0,0"
-                     ItemsSource="{Binding KinshipResults}"
-                     SelectedItem="{Binding SelectedResult, Mode=TwoWay}">
-                <ListBox.ItemTemplate>
-                    <DataTemplate x:DataType="vm:KinshipResultRow">
-                        <StackPanel Margin="0,2">
-                            <TextBlock Text="{Binding Summary}" />
-                            <TextBlock Text="{Binding Path}" FontSize="11" Opacity="0.7" />
-                        </StackPanel>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-        </Grid>
+            <TextBlock Text="提示：兄弟姐妹与子女会按父/母自动推导。" FontSize="11" Opacity="0.7" TextWrapping="Wrap" />
+        </StackPanel>
     </Grid>
 </UserControl>

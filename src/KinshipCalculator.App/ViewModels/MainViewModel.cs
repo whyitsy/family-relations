@@ -9,20 +9,11 @@ using KinshipCalculator.Core.Serialization;
 
 namespace KinshipCalculator.App.ViewModels;
 
-/// <summary>称谓结果行（不可变展示模型，避免转换器）。</summary>
-public sealed class KinshipResultRow
-{
-    public required string PersonId { get; init; }
-    public required string Summary { get; init; }
-    public required string Path { get; init; }
-}
-
 /// <summary>主视图模型：管理多个关系图谱、当前图谱的编辑与称谓计算。</summary>
 public partial class MainViewModel : ObservableObject
 {
     private readonly IStorageService _storage;
     private KinshipDocument _document;
-    private bool _syncing;
     private IReadOnlyList<KinshipResult> _lastRawResults = Array.Empty<KinshipResult>();
 
     private static readonly Gender[] GenderOrder = { Gender.Male, Gender.Female, Gender.Unknown };
@@ -41,12 +32,6 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private Person? _selfPerson;
-
-    [ObservableProperty]
-    private ObservableCollection<KinshipResultRow> _kinshipResults = new();
-
-    [ObservableProperty]
-    private KinshipResultRow? _selectedResult;
 
     [ObservableProperty]
     private string _statusMessage = string.Empty;
@@ -116,13 +101,6 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(HasSelection));
         RefreshDetail();
         Recalculate();
-    }
-
-    partial void OnSelectedResultChanged(KinshipResultRow? value)
-    {
-        if (_syncing || value is null)
-            return;
-        SelectedPerson = Data.People.FirstOrDefault(p => p.Id == value.PersonId);
     }
 
     // ── 图谱管理 ──
@@ -367,29 +345,7 @@ public partial class MainViewModel : ObservableObject
 
         var rules = BuiltInRuleSets.Resolve(CurrentGraph.RuleSetId, _document.RuleSets);
         _lastRawResults = new RelationshipCalculator().ComputeAll(Data, rules);
-
-        var rows = new ObservableCollection<KinshipResultRow>();
-        foreach (var r in _lastRawResults)
-        {
-            var summary = $"{r.PersonName} —— {r.Term}";
-            if (r.IsAmbiguous)
-                summary += "（多重关系）";
-            else if (r.NeedsBirthDate)
-                summary += "（需补充生日）";
-
-            rows.Add(new KinshipResultRow
-            {
-                PersonId = r.PersonId,
-                Summary = summary,
-                Path = r.PathDescription ?? string.Empty,
-            });
-        }
-
-        KinshipResults = rows;
-
-        _syncing = true;
-        SelectedResult = KinshipResults.FirstOrDefault(x => x.PersonId == SelectedPerson?.Id);
-        _syncing = false;
+        OnPropertyChanged(nameof(LastRawResults));
 
         Save();
     }
