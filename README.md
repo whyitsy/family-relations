@@ -23,12 +23,10 @@ KinshipCalculator.slnx
 │   │   ├── ViewModels/                # MainViewModel
 │   │   └── Views/                     # MainWindow / MainView / GraphCanvas（自绘）
 │   ├── KinshipCalculator.Desktop/     # Windows 桌面头（WinExe，PublishAot）
-│   ├── KinshipCalculator.Transfer/    # 光学传输（喷泉码 + 协议 + QR，纯托管 AOT 安全）
 │   ├── KinshipCalculator.Android/     # Android 骨架（net10.0-android）
 │   └── KinshipCalculator.iOS/         # iOS 骨架（net10.0-ios）
 └── tests/
-    ├── KinshipCalculator.Core.Tests/    # xUnit：称谓规则/长幼/歧义/序列化
-    └── KinshipCalculator.Transfer.Tests/ # xUnit：喷泉码黄金向量/协议/QR/往返
+    └── KinshipCalculator.Core.Tests/    # xUnit：称谓规则/长幼/歧义/序列化
 ```
 
 ---
@@ -39,7 +37,6 @@ KinshipCalculator.slnx
 
 ```powershell
 dotnet test tests\KinshipCalculator.Core.Tests
-dotnet test tests\KinshipCalculator.Transfer.Tests
 ```
 
 ### 2.2 桌面端调试运行
@@ -90,40 +87,28 @@ dotnet publish src\KinshipCalculator.Desktop -c Release -r win-x64
 
 ## 4. 数据传递
 
-设备间无需网络/配对即可传递家谱数据：
+设备间无需网络/配对即可传递家谱数据：工具栏「数据传递」区提供 **导出 JSON 文件**、**复制 JSON**（到剪贴板）、**导入 JSON 文件**、**粘贴导入**（自动识别 JSON，可夹带说明文字）。导入会规范化：补齐/去重人员 Id、修正非法枚举、丢弃悬空/自环/重复关系、校验「我」。
 
-### 4.1 手动导入 / 导出（全平台）
-
-工具栏「数据传递」区提供：**导出 JSON 文件**、**复制 JSON**（到剪贴板）、**导入 JSON 文件**、**粘贴导入**（自动识别 JSON，可夹带说明文字）。导入会规范化：补齐/去重人员 Id、修正非法枚举、丢弃悬空/自环/重复关系、校验「我」。
-
-### 4.2 光学发送（屏幕 → 摄像头）
-
-点击「光学发送」打开窗口，屏幕持续播放**喷泉码二维码流**，另一台设备用摄像头扫描即可还原。核心 `KinshipCalculator.Transfer`：
-
-- 喷泉码：系统性-旋转木马 fountain code（周期 2k，前 k 帧原始块 + 后 k 帧 4–24 度修复帧），丢帧只耗时、不损正确性，收发帧率无需一致。
-- 协议：22 字节自描述帧头 + 文件容器（文件名/媒体类型/可选 gzip/SHA-256），与 [decimen-optical-transfer](https://github.com/bashalarmistalt/decimen-optical-transfer) **线上比特级兼容**（喷泉码流指纹经黄金向量验证）。
-- QR：ZXing.Net（ECC L、字节模式），纯托管，Native AOT 下可用（整体仅增约 0.3 MB）。
-
-> 接收端（摄像头）尚未接入：桌面端为避免捆绑 ~100MB 原生 OpenCV 改用手动导入替代；移动端摄像头接收需在可构建 Android/iOS 的环境完成（系统摄像头本身零额外占用）。
+> 跨设备：导出 JSON 文件或用「复制 JSON」拿到剪贴板，在另一台设备「导入 JSON 文件」或「粘贴导入」即可。
 
 ---
 
 ## 5. 称谓规则与扩展
 
-### 4.1 算法流程
+### 5.1 算法流程
 
 1. 由 `FamilyData` 构建内存图 `RelationshipGraph`（配偶/兄弟姐妹双向规范化；子女由父/母反向推导；兄弟姐妹亦按共同父母推导）。
 2. 对每个目标，用 BFS/DFS 找「我」到它的**最短简单路径**（最大深度 8），路径每步显式携带关系种类（`PathStep`），以正确处理近亲导致的多种关系。
 3. 将路径序列与规则库 `KinshipRuleBook` 匹配，结合「我」的性别、目标性别、长幼（生日比较）得到称谓。
 4. 多条最短路径称谓不同 → 标记 `IsAmbiguous` 并列出候选；规则库未覆盖 → 「未知关系（关系较远，暂无标准称谓）」；缺生日导致长幼无法判定 → 使用通用称谓（如「哥哥/弟弟」）并标记 `NeedsBirthDate`。
 
-### 4.2 覆盖范围（示例）
+### 5.2 覆盖范围（示例）
 
 直系：爸爸/妈妈、爷爷/奶奶/外公/外婆、曾祖父辈；儿子/女儿、孙子/孙女/外孙/外孙女、曾孙辈。
 旁系：哥哥/弟弟/姐姐/妹妹、伯父/叔叔/姑姑、舅舅/姨妈、伯母/婶婶/姑父/舅妈/姨父、堂/表兄弟姐妹（姑表/舅表/姨表）、侄子/侄女/外甥/外甥女。
 姻亲：丈夫/妻子、岳父/岳母/公公/婆婆、大伯子/小叔子/大姑子/小姑子、大舅子/小舅子/大姨子/小姨子、嫂子/弟媳/姐夫/妹夫、儿媳/女婿。
 
-### 4.3 新增称谓
+### 5.3 新增称谓
 
 只需在 `src/KinshipCalculator.Core/Rules/KinshipRuleBook.cs` 的规则数组中追加一条：
 
