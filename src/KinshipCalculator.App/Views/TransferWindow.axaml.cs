@@ -76,7 +76,7 @@ public partial class TransferWindow : Window
 
         QrView.SetQr(qr);
         _seq++;
-        StatusText.Text = $"帧 {_seq} · 共 {_sender.BlockCount} 块 · 循环播放中（另一台设备扫码接收）";
+        StatusText.Text = $"帧 {_seq} · QR {qr.Size}×{qr.Size} · 共 {_sender.BlockCount} 块 · 循环播放中（另一台设备扫码接收）";
     }
 
     private void Stop()

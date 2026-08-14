@@ -5,6 +5,18 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.1.2] - 2026-08-14
+
+### Fixed
+
+- 光学发送白屏：二维码显示改为 `Canvas` + 矩形形状绘制（与关系图谱 GraphCanvas 同一套「真实控件子元素」机制），彻底修复屏幕上不出现/不更新二维码的问题。
+
+## [1.1.1] - 2026-08-14
+
+### Fixed
+
+- 光学发送白屏：将二维码由 `WriteableBitmap` 像素绘制改为 `Control.Render` 矢量绘制。
+
 ## [1.1.0] - 2026-08-14
 
 ### Added
