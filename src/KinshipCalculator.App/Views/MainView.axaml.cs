@@ -11,6 +11,7 @@ public partial class MainView : UserControl
 {
     private const double LeftColumnWidth = 260;
     private const double LeftColumnMinWidth = 170;
+    private const double CollapsedColumnWidth = 130;
     private const double RightColumnWidth = 340;
     private const double RightColumnMinWidth = 230;
 
@@ -82,16 +83,16 @@ public partial class MainView : UserControl
             Root.ColumnDefinitions[0].Width = new GridLength(LeftColumnWidth);
             Root.ColumnDefinitions[0].MinWidth = LeftColumnMinWidth;
             LeftSplitter.IsVisible = true;
-            MemberList.IsVisible = true;
-            ToggleListButton.Content = "隐藏成员列表";
+            MemberListContainer.IsVisible = true;
+            ToggleListButton.Content = "隐藏";
         }
         else
         {
-            Root.ColumnDefinitions[0].Width = new GridLength(0);
-            Root.ColumnDefinitions[0].MinWidth = 0;
+            Root.ColumnDefinitions[0].Width = new GridLength(CollapsedColumnWidth);
+            Root.ColumnDefinitions[0].MinWidth = CollapsedColumnWidth;
             LeftSplitter.IsVisible = false;
-            MemberList.IsVisible = false;
-            ToggleListButton.Content = "显示成员列表";
+            MemberListContainer.IsVisible = false;
+            ToggleListButton.Content = "显示";
         }
     }
 

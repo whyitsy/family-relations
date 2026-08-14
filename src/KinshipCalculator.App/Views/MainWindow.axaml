@@ -6,6 +6,7 @@
         Height="800"
         MinWidth="960"
         MinHeight="600"
+        Icon="/Assets/app-icon.png"
         Title="亲戚关系计算器">
     <views:MainView />
 </Window>
