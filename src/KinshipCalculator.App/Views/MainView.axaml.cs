@@ -179,4 +179,17 @@ public partial class MainView : UserControl
         }
     }
 
+    private async void OnOpenTerms(object? sender, RoutedEventArgs e)
+    {
+        if (_vm is null || _vm.CurrentGraph is null)
+            return;
+
+        var window = new TermsWindow();
+        window.Initialize(_vm.Document, _vm.CurrentGraph, () => _vm.ApplyRulesChanged());
+
+        if (TopLevel.GetTopLevel(this) is Window owner)
+            await window.ShowDialog(owner);
+        else
+            window.Show();
+    }
 }

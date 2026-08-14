@@ -5,6 +5,18 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.3.0] - 2026-08-14
+
+### Added
+
+- 可拖动调整的 UI 布局：成员列表 / 关系图谱 / 成员详情之间加入 `GridSplitter`，可拖动改变各栏宽度（带最小/最大宽度约束）。
+- 多关系图谱：支持新建/删除/切换/重命名多个图谱，每个图谱独立存储人物与关系；存储升级为文档格式（`KinshipDocument`），旧单图 `data.json` 自动无损迁移。
+- 地区/方言称谓：称谓规则由写死改为**纯数据规则集**（`KinshipRuleSet`）；内置「普通话」「粤语」预设；新增「称谓规则」窗口，支持切换预设、复制为自定义、修改称谓文本、添加/删除规则（含关系路径组合器）；自定义规则集随文档持久化。
+
+### Changed
+
+- `RelationshipCalculator.ComputeAll` 支持按规则集计算（默认普通话）；`FamilyGraph` 增加 `RuleSetId`；`KinshipDocument` 增加 `RuleSets`。
+
 ## [1.2.0] - 2026-08-14
 
 ### Removed

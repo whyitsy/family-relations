@@ -14,9 +14,9 @@
 KinshipCalculator.slnx
 ├── src/
 │   ├── KinshipCalculator.Core/        # 纯 C# 核心（零 UI 依赖，AOT 安全）
-│   │   ├── Models/                    # Person / RelationEdge / FamilyData / 枚举
+│   │   ├── Models/                    # Person / RelationEdge / FamilyData / FamilyGraph / KinshipDocument / 枚举
 │   │   ├── Graph/                     # RelationshipGraph（邻接索引）、PathStep、StepKind
-│   │   ├── Rules/                     # KinshipRule / KinshipRuleBook / KinshipEngine
+│   │   ├── Rules/                     # KinshipRule / KinshipRuleSet / BuiltInRuleSets / KinshipEngine
 │   │   └── Calculator/                # RelationshipCalculator / PathFinder / KinshipResult
 │   ├── KinshipCalculator.App/         # 共享 Avalonia UI（net10.0）
 │   │   ├── Services/                  # 存储、JSON 上下文、图谱布局引擎
@@ -25,8 +25,10 @@ KinshipCalculator.slnx
 │   ├── KinshipCalculator.Desktop/     # Windows 桌面头（WinExe，PublishAot）
 │   ├── KinshipCalculator.Android/     # Android 骨架（net10.0-android）
 │   └── KinshipCalculator.iOS/         # iOS 骨架（net10.0-ios）
+├── docs/
+│   └── 称谓规则方案.md                  # 地区/方言称谓自定义方案（规划）
 └── tests/
-    └── KinshipCalculator.Core.Tests/    # xUnit：称谓规则/长幼/歧义/序列化
+    └── KinshipCalculator.Core.Tests/    # xUnit：称谓规则/长幼/歧义/序列化/多图谱
 ```
 
 ---
@@ -76,12 +78,16 @@ dotnet publish src\KinshipCalculator.Desktop -c Release -r win-x64
 
 ## 3. 使用说明
 
-1. **新增成员**：点击「新增成员」，在右侧详情面板填写姓名/性别/生日/备注。
-2. **设置关系**：在详情面板为成员选择「父亲 / 母亲 / 配偶」。兄弟姐妹与子女会**按父/母关系自动推导**（同父/同母即视为兄弟姐妹），无需手动录入。
-3. **指定「我」**：选中某人后点击「设为『我』」。
-4. **查看称谓**：右侧列表自动显示每个人相对「我」的称谓与关系路径；中间图谱可**拖拽平移、滚轮缩放、点击节点选中**。
+1. **管理图谱**：顶部「图谱」区可新建/删除多个关系图谱（每个图谱是一套独立的人物与关系），下拉切换当前图谱、文本框直接改名。
+2. **新增成员**：点击「新增成员」，在右侧详情面板填写姓名/性别/生日/备注。
+3. **设置关系**：在详情面板为成员选择「父亲 / 母亲 / 配偶」。兄弟姐妹与子女会**按父/母关系自动推导**（同父/同母即视为兄弟姐妹），无需手动录入。
+4. **指定「我」**：选中某人后点击「设为『我』」。
+5. **查看称谓**：右侧列表自动显示每个人相对「我」的称谓与关系路径；中间图谱可**拖拽平移、滚轮缩放、点击节点选中**。左侧成员列表与右侧详情面板之间的分隔条可**拖动调整宽度**。
+6. **调整称谓（地区/方言）**：点击「称谓规则」打开窗口，切换内置方言预设（普通话 / 粤语），或「复制为自定义」后修改称谓文本、添加/删除规则；修改立即应用到当前图谱。
 
-数据自动保存到 `%AppData%\亲戚关系计算器\data.json`（桌面端）。
+数据自动保存到 `%AppData%\亲戚关系计算器\data.json`（桌面端，多图谱文档格式，含自定义称谓规则集）。
+
+> 地区称谓（方言）自定义方案见 [`docs/称谓规则方案.md`](docs/称谓规则方案.md)。
 
 ---
 
