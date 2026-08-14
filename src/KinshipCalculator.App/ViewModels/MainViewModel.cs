@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using KinshipCalculator.App.Services;
 using KinshipCalculator.Core.Calculator;
 using KinshipCalculator.Core.Models;
+using KinshipCalculator.Core.Rules;
 using KinshipCalculator.Core.Serialization;
 
 namespace KinshipCalculator.App.ViewModels;
@@ -16,15 +17,21 @@ public sealed class KinshipResultRow
     public required string Path { get; init; }
 }
 
-/// <summary>主视图模型：管理家谱数据、编辑与称谓计算。</summary>
+/// <summary>主视图模型：管理多个关系图谱、当前图谱的编辑与称谓计算。</summary>
 public partial class MainViewModel : ObservableObject
 {
     private readonly IStorageService _storage;
-    private readonly FamilyData _data;
+    private KinshipDocument _document;
     private bool _syncing;
     private IReadOnlyList<KinshipResult> _lastRawResults = Array.Empty<KinshipResult>();
 
     private static readonly Gender[] GenderOrder = { Gender.Male, Gender.Female, Gender.Unknown };
+
+    [ObservableProperty]
+    private ObservableCollection<FamilyGraph> _graphs = new();
+
+    [ObservableProperty]
+    private FamilyGraph? _currentGraph;
 
     [ObservableProperty]
     private ObservableCollection<Person> _people = new();
@@ -47,19 +54,51 @@ public partial class MainViewModel : ObservableObject
     public MainViewModel(IStorageService storage)
     {
         _storage = storage;
-        _data = storage.Load();
-        People = new ObservableCollection<Person>(_data.People);
-        SelfPerson = _data.People.FirstOrDefault(p => p.Id == _data.SelfId);
+        _document = storage.Load();
+        if (_document.Graphs.Count == 0)
+            _document = KinshipDocumentSerializer.CreateDefault();
+
+        var current = _document.Graphs.FirstOrDefault(g => g.Id == _document.CurrentGraphId)
+                      ?? _document.Graphs[0];
+        _document.CurrentGraphId = current.Id;
+
+        Graphs = new ObservableCollection<FamilyGraph>(_document.Graphs);
+        CurrentGraph = current;
         Recalculate();
     }
 
-    public FamilyData Data => _data;
+    /// <summary>当前图谱的家谱数据（供视图/图谱画布读取）。</summary>
+    public FamilyData Data => CurrentGraph!.Data;
 
     public IReadOnlyList<KinshipResult> LastRawResults => _lastRawResults;
 
     public bool HasSelection => SelectedPerson is not null;
 
     public string SelfLabel => SelfPerson is null ? "未指定『我』" : $"『我』：{SelfPerson.Name}";
+
+    /// <summary>当前图谱名称（双向，改名即时保存）。</summary>
+    public string GraphName
+    {
+        get => CurrentGraph!.Name;
+        set
+        {
+            if (CurrentGraph!.Name != value)
+            {
+                CurrentGraph.Name = value ?? string.Empty;
+                OnPropertyChanged();
+                Save();
+            }
+        }
+    }
+
+    partial void OnCurrentGraphChanged(FamilyGraph? value)
+    {
+        if (value is null)
+            return;
+
+        _document.CurrentGraphId = value.Id;
+        RebuildFromCurrent();
+    }
 
     partial void OnSelectedPersonChanged(Person? value)
     {
@@ -72,14 +111,48 @@ public partial class MainViewModel : ObservableObject
     {
         if (_syncing || value is null)
             return;
-        SelectedPerson = _data.People.FirstOrDefault(p => p.Id == value.PersonId);
+        SelectedPerson = Data.People.FirstOrDefault(p => p.Id == value.PersonId);
     }
+
+    // ── 图谱管理 ──
+
+    [RelayCommand]
+    private void AddGraph()
+    {
+        var g = new FamilyGraph { Name = $"图谱 {Graphs.Count + 1}" };
+        _document.Graphs.Add(g);
+        Graphs.Add(g);
+        CurrentGraph = g;
+        Save();
+        StatusMessage = $"已新建「{g.Name}」";
+    }
+
+    [RelayCommand]
+    private void DeleteGraph()
+    {
+        if (Graphs.Count <= 1)
+        {
+            StatusMessage = "至少保留一个图谱";
+            return;
+        }
+
+        var g = CurrentGraph!;
+        var idx = Graphs.IndexOf(g);
+        _document.Graphs.Remove(g);
+        Graphs.Remove(g);
+
+        CurrentGraph = Graphs[Math.Clamp(idx, 0, Graphs.Count - 1)];
+        Save();
+        StatusMessage = $"已删除「{g.Name}」";
+    }
+
+    // ── 成员操作 ──
 
     [RelayCommand]
     private void AddPerson()
     {
         var p = new Person { Name = "新成员", Gender = Gender.Unknown };
-        _data.People.Add(p);
+        Data.People.Add(p);
         People.Add(p);
         SelectedPerson = p;
     }
@@ -91,11 +164,11 @@ public partial class MainViewModel : ObservableObject
         if (p is null)
             return;
 
-        _data.People.Remove(p);
-        _data.Relations.RemoveAll(r => r.FromId == p.Id || r.ToId == p.Id);
-        if (_data.SelfId == p.Id)
+        Data.People.Remove(p);
+        Data.Relations.RemoveAll(r => r.FromId == p.Id || r.ToId == p.Id);
+        if (Data.SelfId == p.Id)
         {
-            _data.SelfId = null;
+            Data.SelfId = null;
             SelfPerson = null;
             OnPropertyChanged(nameof(SelfLabel));
         }
@@ -112,7 +185,7 @@ public partial class MainViewModel : ObservableObject
         if (p is null)
             return;
 
-        _data.SelfId = p.Id;
+        Data.SelfId = p.Id;
         SelfPerson = p;
         OnPropertyChanged(nameof(SelfLabel));
         Recalculate();
@@ -212,17 +285,17 @@ public partial class MainViewModel : ObservableObject
     private Person? FindParent(Person p, bool isFather)
     {
         var kind = isFather ? RelationKind.Father : RelationKind.Mother;
-        var edge = _data.Relations.FirstOrDefault(r => r.FromId == p.Id && r.Kind == kind);
-        return edge is null ? null : _data.People.FirstOrDefault(x => x.Id == edge.ToId);
+        var edge = Data.Relations.FirstOrDefault(r => r.FromId == p.Id && r.Kind == kind);
+        return edge is null ? null : Data.People.FirstOrDefault(x => x.Id == edge.ToId);
     }
 
     private Person? FindSpouse(Person p)
     {
-        var edge = _data.Relations.FirstOrDefault(r =>
+        var edge = Data.Relations.FirstOrDefault(r =>
             r.Kind == RelationKind.Spouse && (r.FromId == p.Id || r.ToId == p.Id));
         if (edge is null)
             return null;
-        return _data.People.FirstOrDefault(x => x.Id == (edge.FromId == p.Id ? edge.ToId : edge.FromId));
+        return Data.People.FirstOrDefault(x => x.Id == (edge.FromId == p.Id ? edge.ToId : edge.FromId));
     }
 
     private void SetParent(Person? value, bool isFather)
@@ -232,9 +305,9 @@ public partial class MainViewModel : ObservableObject
             return;
 
         var kind = isFather ? RelationKind.Father : RelationKind.Mother;
-        _data.Relations.RemoveAll(r => r.FromId == p.Id && r.Kind == kind);
+        Data.Relations.RemoveAll(r => r.FromId == p.Id && r.Kind == kind);
         if (value is not null)
-            _data.Relations.Add(new RelationEdge { FromId = p.Id, ToId = value.Id, Kind = kind });
+            Data.Relations.Add(new RelationEdge { FromId = p.Id, ToId = value.Id, Kind = kind });
 
         OnPropertyChanged(isFather ? nameof(SelectedFather) : nameof(SelectedMother));
         Recalculate();
@@ -246,9 +319,9 @@ public partial class MainViewModel : ObservableObject
         if (p is null || (value is not null && value.Id == p.Id))
             return;
 
-        _data.Relations.RemoveAll(r => r.Kind == RelationKind.Spouse && (r.FromId == p.Id || r.ToId == p.Id));
+        Data.Relations.RemoveAll(r => r.Kind == RelationKind.Spouse && (r.FromId == p.Id || r.ToId == p.Id));
         if (value is not null)
-            _data.Relations.Add(new RelationEdge { FromId = p.Id, ToId = value.Id, Kind = RelationKind.Spouse });
+            Data.Relations.Add(new RelationEdge { FromId = p.Id, ToId = value.Id, Kind = RelationKind.Spouse });
 
         OnPropertyChanged(nameof(SelectedSpouse));
         Recalculate();
@@ -265,9 +338,24 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(SelectedSpouse));
     }
 
+    private void RebuildFromCurrent()
+    {
+        var data = Data;
+        People = new ObservableCollection<Person>(data.People);
+        SelfPerson = data.People.FirstOrDefault(p => p.Id == data.SelfId);
+        SelectedPerson = null;
+        OnPropertyChanged(nameof(SelfLabel));
+        OnPropertyChanged(nameof(GraphName));
+        Recalculate();
+    }
+
     private void Recalculate()
     {
-        _lastRawResults = new RelationshipCalculator().ComputeAll(_data);
+        if (CurrentGraph is null)
+            return;
+
+        var rules = BuiltInRuleSets.RulesFor(CurrentGraph.RuleSetId);
+        _lastRawResults = new RelationshipCalculator().ComputeAll(Data, rules);
 
         var rows = new ObservableCollection<KinshipResultRow>();
         foreach (var r in _lastRawResults)
@@ -295,40 +383,61 @@ public partial class MainViewModel : ObservableObject
         Save();
     }
 
-    private void Save() => _storage.Save(_data);
+    private void Save() => _storage.Save(_document);
 
     // ── 数据导入 / 导出 ──
 
-    /// <summary>把当前家谱序列化为 JSON 文本（供文件导出或复制到剪贴板）。</summary>
-    public string SerializeCurrent() => FamilyDataSerializer.Serialize(_data);
+    /// <summary>把当前图谱序列化为 JSON 文本（供文件导出或复制到剪贴板）。</summary>
+    public string SerializeCurrent() => FamilyDataSerializer.Serialize(Data);
 
-    /// <summary>从 JSON 文本导入家谱数据；成功后整体替换当前数据并持久化。</summary>
+    /// <summary>
+    /// 从 JSON 文本导入：多图谱文档整体替换；旧单图格式导入到当前图谱。成功后持久化。
+    /// </summary>
     public bool TryImportJson(string? json, out string? error)
     {
-        if (!FamilyDataSerializer.TryDeserialize(json, out var data, out error) || data is null)
-            return false;
+        // 1) 多图谱文档 → 整体替换。
+        if (KinshipDocumentSerializer.TryParseDocument(json, out var doc, out error))
+        {
+            if (doc is null)
+                return false;
+            ReplaceDocument(doc);
+            return true;
+        }
 
-        ReplaceData(data);
-        return true;
+        // 2) 单图谱（旧格式 / 导出 JSON 文件）→ 替换当前图谱数据。
+        if (FamilyDataSerializer.TryDeserialize(json, out var data, out error) && data is not null)
+        {
+            ReplaceCurrentData(data);
+            return true;
+        }
+
+        return false;
     }
 
-    private void ReplaceData(FamilyData data)
+    private void ReplaceDocument(KinshipDocument doc)
     {
-        // 先清空选择，避免引用即将移除的旧对象。
-        SelectedResult = null;
-        SelectedPerson = null;
+        _document = KinshipDocumentSerializer.Normalize(doc);
+        if (_document.Graphs.Count == 0)
+            _document.Graphs.Add(new FamilyGraph());
 
-        _data.People.Clear();
-        _data.People.AddRange(data.People);
-        _data.Relations.Clear();
-        _data.Relations.AddRange(data.Relations);
-        _data.SelfId = data.SelfId;
+        Graphs = new ObservableCollection<FamilyGraph>(_document.Graphs);
 
-        People = new ObservableCollection<Person>(_data.People);
-        SelfPerson = _data.People.FirstOrDefault(p => p.Id == _data.SelfId);
-        OnPropertyChanged(nameof(SelfLabel));
+        var current = _document.Graphs.FirstOrDefault(g => g.Id == _document.CurrentGraphId)
+                      ?? _document.Graphs[0];
+        _document.CurrentGraphId = current.Id;
+        CurrentGraph = current;
 
-        Recalculate();
-        StatusMessage = $"已导入 {data.People.Count} 位成员";
+        RebuildFromCurrent();
+        Save();
+        StatusMessage = $"已导入 {_document.Graphs.Count} 个图谱";
+    }
+
+    private void ReplaceCurrentData(FamilyData data)
+    {
+        CurrentGraph!.Data = FamilyDataSerializer.Normalize(data);
+
+        RebuildFromCurrent();
+        Save();
+        StatusMessage = $"已导入 {Data.People.Count} 位成员到「{CurrentGraph!.Name}」";
     }
 }
