@@ -5,7 +5,7 @@ namespace KinshipCalculator.Core.Serialization;
 
 /// <summary>
 /// 家谱数据的 JSON 序列化与导入规范化（AOT 安全：全程走源生成器上下文）。
-/// 供文件存储、手动导入/导出以及光学传递共用。
+/// 供文件存储与手动导入/导出共用。
 /// </summary>
 public static class FamilyDataSerializer
 {

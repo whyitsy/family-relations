@@ -24,7 +24,6 @@
             <Button Content="复制 JSON" Click="OnCopyText" />
             <Button Content="导入 JSON 文件" Click="OnImportFile" />
             <Button Content="粘贴导入" Click="OnPasteImport" />
-            <Button Content="光学发送" Click="OnOpenTransfer" />
             <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center" Opacity="0.8"
                        TextTrimming="CharacterEllipsis" MaxWidth="380" />
         </StackPanel>
